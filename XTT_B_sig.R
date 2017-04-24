@@ -25,7 +25,7 @@ skipcolumns <- c(1,6,7,12)
 
 # Main-, sub- and axis titel of plot
 maintitel <- "XTT assay"
-subtitel <- "ADSC irratiated 30min (453nm, 23mW/cm?), 3 plates each time point"
+subtitel <- "ADSC irratiated 30min (453nm, 23mW/cm), 3 plates each time point"
 xaxis <- "Time since irradiation [h]"
 yaxis <- "Fold change (irradiated/control)"
 
@@ -137,7 +137,7 @@ p <- ggplot(XTTclean, aes(Harvest, Fold.Change)) +
   coord_cartesian(ylim = c(ymini, ymaxi)) +
   theme_bw() + theme(panel.grid = element_blank()) +
   ggtitle(maintitel, subtitel) + ylab(yaxis) + xlab(xaxis) +
-  geom_jitter(width = 0.1, height = 0) +
+  # geom_jitter(width = 0.1, height = 0) + #uncomment to see individual datapoints
   scale_y_continuous(breaks=seq(ymini,ymaxi,0.1)) + 
   scale_x_discrete(labels= xaxisticks) + # uncomment to manualy set x-axis ticks
   geom_text(data = nlabel.df, label = lvlslabel)   # uncomment to lable number of observations

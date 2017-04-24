@@ -17,12 +17,11 @@
 
 ###################### Change values here to fit your desire ###################
 
-# y-scaling
+# Scaling of y-axis
 ymini = 0.5 
 ymaxi = 1.5
 
-# Rows and columns not to use 
-# (eg. boarders of plate or boarder between irradiated/control)
+# Rows and columns not to use (eg. boarders of plate or boarder between irradiated/control)
 skiprows <- c("A", "H")
 skipcolumns <- c(1,6,7,12)
 
@@ -36,8 +35,6 @@ yaxis <- "Fold change (irradiated/control)"
 xaxisticks <- c("CTRL","24","48", "72")
 
 ###################### End of setup section ####################################
-################################################################################
-
 # Load ggplot2 for plotting and readxl for excel import
 library("ggplot2")
 library("readxl")
@@ -77,11 +74,14 @@ if(is.factor(XTTclean$Fold.Change)){
   XTTclean$Fold.Change <- as.numeric(XTTclean$Fold.Change)
 }
 
-# Test significance
+# get number of measurments
+lvls <- levels(XTTclean$Harvest)
+
+# t-test to get significant differences
 tt <- pairwise.t.test(x = XTTclean$Fold.Change, 
                       g = XTTclean$Harvest)
 
-# Assign stars according to significance level
+# function that assigns stars according to significance level
 get.stars <- function(pvalue) {
   strs <- c()
   if(is.na(pvalue)) {
@@ -100,17 +100,17 @@ get.stars <- function(pvalue) {
   return(strs)
 }
 
-stars <- c() #reset vector
+# generate dataframe from p.values of t-test
+stars <- data.frame("col" = integer(), "row" = integer(), "value" = integer(), "poscol" = integer(), "posrow" = integer()) #reset vector
 
-for(i in seq_along(tt$p.value)) {
-  if(!is.na(tt$p.value[i])) {
-    stars <- append(stars, get.stars(tt$p.value[i]))
-  }
-  
+for(i in colnames(tt$p.value)) {
+  for(j in rownames(tt$p.value)) {
+    
+    stars[nrow(stars)+1,] <- c(i,j,get.stars(tt$p.value[j,i]),which(i==lvls),which(j==lvls)) 
+  }   
 }
-
-# get number of measurments
-lvls <- levels(XTTclean$Harvest)
+# drop entries that are not significant 
+stars <- stars[stars$value != "",]
 
 # generate labels for number of measurments
 lvlslabel <- c() #reset vector
@@ -119,89 +119,15 @@ for(i in lvls) {
                                                            Harvest == i))))
 }
 
-######### Positioning ######### 
 # Get maximal FC value and add offset as basis for postion of lines
 MaxFC <- max(XTTclean$Fold.Change) + 0.325 
-# Check if MaxFC exceeds upper point of y-axis
-# set it back if needed
-if(MaxFC > ymaxi) MaxFC <- ymaxi
 
-# Postition of stars
-if(length(lvls) == 3) {
-  slabel.df <- data.frame(Harvest = c(1.5, 2, 2.5),
-                          Fold.Change = c(
-                            MaxFC - 0.05, 
-                            MaxFC, 
-                            MaxFC - 0.1 )) 
-} else if(length(lvls) == 4) {
-  slabel.df <- data.frame(Harvest = c(1.5, #1 postion of stars from top to bottom
-                                      2,  #2
-                                      2.5, #3
-                                      2.5, #4                                  
-                                      3, #5
-                                      3.5), #6
-                          Fold.Change = c(MaxFC - 0.1, #1
-                                          MaxFC - 0.05, #2
-                                          MaxFC, #3
-                                          MaxFC - 0.2, #4
-                                          MaxFC - 0.15, #5                                          
-                                          MaxFC - 0.25)) #6
-}
+# Check if MaxFC exceeds upper point of y-axis, set it back if needed
+if(MaxFC > ymaxi) MaxFC <- ymaxi
 
 # Postion of number of measurments
 nlabel.df <- data.frame(Harvest = lvls,
                         Fold.Change = ymini)
-
-# Postition of lines
-if(length(lvls) == 3) {
-  df1 <- data.frame(a = c(1, 1, 3, 3), 
-                    b = c(MaxFC - 0.05, 
-                          MaxFC - 0.025,  
-                          MaxFC - 0.025, 
-                          MaxFC - 0.05))
-  df2 <- data.frame(a = c(1, 1, 2, 2), 
-                    b = c(MaxFC - 0.1, 
-                          MaxFC - 0.075, 
-                          MaxFC - 0.075, 
-                          MaxFC - 0.1))
-  df3 <- data.frame(a = c(2, 2, 3, 3), 
-                    b = c(MaxFC - 0.15, 
-                          MaxFC - 0.125, 
-                          MaxFC - 0.125, 
-                          MaxFC - 0.15))
-} else if(length(lvls) == 4) {
-  df1 <- data.frame(a = c(1, 1, 4, 4), 
-                    b = c(MaxFC - 0.05, 
-                          MaxFC - 0.025, 
-                          MaxFC - 0.025, 
-                          MaxFC - 0.05))
-  df2 <- data.frame(a = c(1, 1, 3, 3), 
-                    b = c(MaxFC - 0.1, 
-                          MaxFC - 0.075, 
-                          MaxFC - 0.075, 
-                          MaxFC - 0.1))
-  df3 <- data.frame(a = c(1, 1, 2, 2), 
-                    b = c(MaxFC - 0.15, 
-                          MaxFC - 0.125, 
-                          MaxFC - 0.125, 
-                          MaxFC - 0.15))
-  df4 <- data.frame(a = c(2, 2, 4, 4),
-                    b = c(MaxFC - 0.2, 
-                          MaxFC - 0.175, 
-                          MaxFC - 0.175, 
-                          MaxFC - 0.2))
-  df5 <- data.frame(a = c(2, 2, 3, 3),
-                    b = c(MaxFC - 0.25, 
-                          MaxFC - 0.225, 
-                          MaxFC - 0.225, 
-                          MaxFC - 0.25))
-  df6 <- data.frame(a = c(3, 3, 4, 4),
-                    b = c(MaxFC - 0.3, 
-                          MaxFC - 0.275, 
-                          MaxFC - 0.275, 
-                          MaxFC - 0.3))
-  dfbig <- list(df3, df2, df1, df4, df5, df6)
-}
 
 ######### Plot ################
 # Set plot size
@@ -214,28 +140,33 @@ p <- ggplot(XTTclean, aes(Harvest, Fold.Change)) +
   theme_bw() + theme(panel.grid = element_blank()) +
   ggtitle(maintitel, subtitel) + ylab(yaxis) + xlab(xaxis) +
   geom_jitter(width = 0.1, height = 0) +
-  scale_y_continuous(breaks=seq(ymini,ymaxi,0.1)) +
+  scale_y_continuous(breaks=seq(ymini,ymaxi,0.1)) + 
+  scale_x_discrete(labels= xaxisticks) + # uncomment to manualy set x-axis ticks
   geom_text(data = nlabel.df, label = lvlslabel)   # uncomment to lable number of observations
 
-# Draw in datapoints as second layer and lines with stars
-# Check number of groups (3 or 4)
-if(length(lvls) == 3) {
-  p + 
-    geom_line(data = df1, aes(x = a, y = b)) + 
-    geom_line(data = df2, aes(x = a, y = b)) +  
-    geom_line(data = df3, aes(x = a, y = b)) +
-    scale_x_discrete(labels=xaxisticks[1:3]) + # uncomment to manualy set x-axis ticks 
-    geom_text(data = slabel.df, label = stars[1:3]) #Stars 1st: 1vs2, 2nd: 1vs3 3rd: 2vs3
-} else if(length(lvls) == 4) {
-  # basic setup
-  p <- p + 
-    scale_x_discrete(labels= xaxisticks) + # uncomment to manualy set x-axis ticks 
-    geom_text(data = slabel.df, label = stars[1:6])
-  # draw only lines for significant differences 
-  for(i in seq_along(stars)) {
-    if(stars[i] != "") {
-      p <- p + geom_line(data = dfbig[[i]], aes(x = a, y = b))
-    }
-  }
-  p
-}  
+
+######### postion of  lines and stars ######### 
+# create list of dataframes for coordinates of lines
+lines <- vector("list", nrow(stars))
+starlabel <- data.frame("label" = integer(), "x" = integer(), "y" = integer())
+# loop over stars dataframe and generate coordinates for lines
+for(i in seq_along(stars[,1])) {
+  lines[[i]] <- data.frame(xli =  as.numeric(c(rep(stars$poscol[i],2),
+                                               rep(stars$posrow[i],2))), 
+                           # i*step size, gap between lines, offset (horizontal length of line)
+                           yli = c(MaxFC - 2*i*0.025, 
+                                   MaxFC - 2*i*0.025+0.025,  
+                                   MaxFC - 2*i*0.025+0.025, 
+                                   MaxFC - 2*i*0.025))
+  # loop over stars dataframe and generate coordinates for stars, x is between compared groups(mean), and y depends on MaxFC and i 
+  starlabel[i,] <- c(stars$value[i], mean(c(as.numeric(stars$poscol[i]), as.numeric(stars$posrow[i]))), (MaxFC - i*0.025-i*0.025+0.035))
+  
+}
+
+# draw lines
+for(i in seq_along(lines)) {
+  p <- p + geom_line(data = lines[[i]], aes(x = xli, y = yli))
+} 
+
+# draw stars
+p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.numeric(y)))

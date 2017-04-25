@@ -37,11 +37,11 @@ xaxisticks <- c("CTRL","24","48", "72")
 library("ggplot2")
 library("readxl")
 
-# Load data
+#### Load data ####
 XTTpath <- file.choose()
 XTTresults <- read_excel(XTTpath, 2)
 
-# Name Columns corretly
+#### Name Columns corretly #### 
 for(i in grep("lab", names(XTTresults), ignore.case=T)) {
   if(any(XTTresults[i] == LETTERS[1:8])) {
     names(XTTresults)[i] <- "Row"
@@ -54,14 +54,14 @@ names(XTTresults)[grep("data", names(XTTresults), ignore.case=T)] <- "Data"
 names(XTTresults)[grep("harvest", names(XTTresults), ignore.case=T)] <- "Harvest"
 names(XTTresults)[grep("fold", names(XTTresults), ignore.case=T)] <- "Fold.Change"
 
-# Clean data
+#### Clean data #### 
 XTTclean1 <- subset(XTTresults, Data != 0)
 XTTclean2 <- subset(XTTclean1, !is.na(Data))
 XTTclean3 <- subset(XTTclean2, Row != skiprows) #uncomment to exclude righ and left  wells
 sel <- XTTclean3[,"Column"] %in% skipcolumns
 XTTclean <- XTTclean3[!sel,] #uncomment to exclude top and bottom and border wells
 
-# Set types of columns correctly
+####  Set types of columns correctly #### 
 XTTclean$Harvest <- as.factor(XTTclean$Harvest)
 XTTclean$Column <- as.factor(XTTclean$Column)
 XTTclean$Row <- as.factor(XTTclean$Row)
@@ -72,14 +72,14 @@ if(is.factor(XTTclean$Fold.Change)){
   XTTclean$Fold.Change <- as.numeric(XTTclean$Fold.Change)
 }
 
-# get number of measurments
+#### get number of measurments #### 
 lvls <- levels(XTTclean$Harvest)
 
-# t-test to get significant differences
+#### t-test to get significant differences #### 
 tt <- pairwise.t.test(x = XTTclean$Fold.Change, 
                       g = XTTclean$Harvest)
 
-# function that assigns stars according to significance level
+#### function that assigns stars according to significance level #### 
 get.stars <- function(pvalue) {
   strs <- c()
   if(is.na(pvalue)) {
@@ -98,7 +98,7 @@ get.stars <- function(pvalue) {
   return(strs)
 }
 
-# generate dataframe from p.values of t-test
+#### generate dataframe from p.values of t-test #### 
 stars <- data.frame("col" = integer(), "row" = integer(), "value" = integer(), "poscol" = integer(), "posrow" = integer()) #reset vector
 
 for(i in colnames(tt$p.value)) {
@@ -107,23 +107,23 @@ for(i in colnames(tt$p.value)) {
     stars[nrow(stars)+1,] <- c(i,j,get.stars(tt$p.value[j,i]),which(i==lvls),which(j==lvls)) 
   }   
 }
-# drop entries that are not significant 
+#### drop entries that are not significant #### 
 stars <- stars[stars$value != "",]
 
-# generate labels for number of measurments
+#### generate labels for number of measurments #### 
 lvlslabel <- c() #reset vector
 for(i in lvls) {
   lvlslabel <- append(lvlslabel, paste("n = ", nrow(subset(XTTclean, 
                                                            Harvest == i))))
 }
 
-# Get maximal FC value and add offset as basis for postion of lines
+####  Get maximal FC value and add offset as basis for postion of lines #### 
 MaxFC <- max(XTTclean$Fold.Change) + 0.325 
 
-# Check if MaxFC exceeds upper point of y-axis, set it back if needed
+####  Check if MaxFC exceeds upper point of y-axis, set it back if needed #### 
 if(MaxFC > ymaxi) MaxFC <- ymaxi
 
-# Postion of number of measurments
+####  Postion of number of measurments #### 
 nlabel.df <- data.frame(Harvest = lvls,
                         Fold.Change = ymini)
 
@@ -131,7 +131,7 @@ nlabel.df <- data.frame(Harvest = lvls,
 # Set plot size
 windows(8,8)
 
-# Basic setup of plot
+#####  Basic setup of plot #### 
 p <- ggplot(XTTclean, aes(Harvest, Fold.Change)) + 
   geom_boxplot(outlier.shape = 3, aes(group = Harvest)) +
   coord_cartesian(ylim = c(ymini, ymaxi)) +
@@ -140,7 +140,7 @@ p <- ggplot(XTTclean, aes(Harvest, Fold.Change)) +
   # geom_jitter(width = 0.1, height = 0) + #uncomment to see individual datapoints
   scale_y_continuous(breaks=seq(ymini,ymaxi,0.1)) + 
   scale_x_discrete(labels= xaxisticks) + # uncomment to manualy set x-axis ticks
-  geom_text(data = nlabel.df, label = lvlslabel)   # uncomment to lable number of observations
+  # geom_text(data = nlabel.df, label = lvlslabel)   # uncomment to lable number of observations
 
 
 ######### postion of  lines and stars ######### 
@@ -161,10 +161,10 @@ for(i in seq_along(stars[,1])) {
   
 }
 
-# draw lines
+##### draw lines #### 
 for(i in seq_along(lines)) {
   p <- p + geom_line(data = lines[[i]], aes(x = xli, y = yli))
 } 
 
-# draw stars
+####  draw stars #### 
 p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.numeric(y)))

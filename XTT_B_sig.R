@@ -1,6 +1,3 @@
-#Tidy up workspace just for debugging
-#rm(list =ls())
-
 ###################### Boxplot with significance levels ########################
 # This script generates a boxplot for plate reader data in the 96-well format  #
 # to compare the fold change between irradiated and control samples.           #
@@ -10,16 +7,14 @@
 # The constants in the first part control the basics of the plot (like the     #    
 # titel but there are also options to exclude columns and rows of the plates). #
 # Please change these values to meet your needs.                               #
-################################################################################
-
-
 ###################### Change values here to fit your desire ###################
 
 # Scaling of y-axis
 ymini = 0.5 
 ymaxi = 1.5
 
-# Rows and columns not to use (eg. boarders of plate or boarder between irradiated/control)
+# Rows and columns not to use 
+# (eg. boarders of plate or boarder between irradiated/control)
 skiprows <- c("A", "H")
 skipcolumns <- c(1,6,7,12)
 
@@ -32,8 +27,10 @@ yaxis <- "Fold change (irradiated/control)"
 # Labels for the ticks on the x axis 
 xaxisticks <- c("CTRL","24","48", "72")
 
+
 ###################### End of setup section ####################################
-# Load ggplot2 for plotting and readxl for excel import
+
+####  Load ggplot2 for plotting and readxl for excel import #### 
 library("ggplot2")
 library("readxl")
 
@@ -61,7 +58,7 @@ XTTclean3 <- subset(XTTclean2, Row != skiprows) #uncomment to exclude righ and l
 sel <- XTTclean3[,"Column"] %in% skipcolumns
 XTTclean <- XTTclean3[!sel,] #uncomment to exclude top and bottom and border wells
 
-####  Set types of columns correctly #### 
+#### Set types of columns correctly #### 
 XTTclean$Harvest <- as.factor(XTTclean$Harvest)
 XTTclean$Column <- as.factor(XTTclean$Column)
 XTTclean$Row <- as.factor(XTTclean$Row)
@@ -99,7 +96,11 @@ get.stars <- function(pvalue) {
 }
 
 #### generate dataframe from p.values of t-test #### 
-stars <- data.frame("col" = integer(), "row" = integer(), "value" = integer(), "poscol" = integer(), "posrow" = integer()) #reset vector
+stars <- data.frame("col" = integer(), 
+                    "row" = integer(), 
+                    "value" = integer(), 
+                    "poscol" = integer(), 
+                    "posrow" = integer()) #reset vector
 
 for(i in colnames(tt$p.value)) {
   for(j in rownames(tt$p.value)) {
@@ -113,8 +114,9 @@ stars <- stars[stars$value != "",]
 #### generate labels for number of measurments #### 
 lvlslabel <- c() #reset vector
 for(i in lvls) {
-  lvlslabel <- append(lvlslabel, paste("n = ", nrow(subset(XTTclean, 
-                                                           Harvest == i))))
+  lvlslabel <- append(lvlslabel, 
+                      paste("n = ", 
+                            nrow(subset(XTTclean, shaHarvest == i))))
 }
 
 ####  Get maximal FC value and add offset as basis for postion of lines #### 
@@ -139,11 +141,11 @@ p <- ggplot(XTTclean, aes(Harvest, Fold.Change)) +
   ggtitle(maintitel, subtitel) + ylab(yaxis) + xlab(xaxis) +
   # geom_jitter(width = 0.1, height = 0) + #uncomment to see individual datapoints
   scale_y_continuous(breaks=seq(ymini,ymaxi,0.1)) + 
-  scale_x_discrete(labels= xaxisticks) + # uncomment to manualy set x-axis ticks
+  scale_x_discrete(labels= xaxisticks)  # uncomment to manualy set x-axis ticks
   # geom_text(data = nlabel.df, label = lvlslabel)   # uncomment to lable number of observations
-
-
-######### postion of  lines and stars ######### 
+  
+  
+  ######### postion of  lines and stars ######### 
 # create list of dataframes for coordinates of lines
 lines <- vector("list", nrow(stars))
 starlabel <- data.frame("label" = integer(), "x" = integer(), "y" = integer())

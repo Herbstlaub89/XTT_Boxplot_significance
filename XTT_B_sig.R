@@ -116,7 +116,7 @@ lvlslabel <- c() #reset vector
 for(i in lvls) {
   lvlslabel <- append(lvlslabel, 
                       paste("n = ", 
-                            nrow(subset(XTTclean, shaHarvest == i))))
+                            nrow(subset(XTTclean, Harvest == i))))
 }
 
 ####  Get maximal FC value and add offset as basis for postion of lines #### 

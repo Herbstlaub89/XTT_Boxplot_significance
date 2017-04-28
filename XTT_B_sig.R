@@ -29,10 +29,10 @@ xaxisticks <- c("CTRL","24","48", "72")
 
 # Outliers-test, set to 0 to disable
 maxoutliers <- 1 # maximal outliers to remove in each direction
-# (highest AND lowest value are checked!)
+# (highest AND lowest value are checked)
 
 senivity <- 1 # smaller values increase senitivity of outlier detection
-# value of 1 means if highest value > second highst value + iqr*factor: outlier
+# value of 1 means if highest value > second highst value + iqr*1 -> outlier
 # the same applies for the smallest value
 
 ###################### End of setup section ####################################
@@ -85,7 +85,7 @@ lvls <- levels(XTTclean$Harvest)
 
 #### outliers test for each level ####
 reflist <- XTTclean[,c("id", "Fold.Change", "Harvest")]
-
+outlCount <- 0
 for(lvl in lvls) {
   outliers <- 0
   while(outliers < maxoutliers ) {
@@ -96,9 +96,11 @@ for(lvl in lvls) {
     iqr <- IQR(subref$Fold.Change)
     if(subref[1,2] < (subref[2,2] - iqr*senivity)) {
       idlist <- append(idlist, subref$id[1])
+      outlCount <- outlCount + 1
     }
     if(subref[nrow(subref),2] > (subref[nrow(subref)-1,2] + iqr*senivity)) {
       idlist <- append(idlist, subref$id[nrow(subref)])
+      outlCount <- outlCount + 1
     }
     XTTclean <- XTTclean[!(XTTclean$id %in% idlist),]
   }
@@ -156,7 +158,7 @@ for(i in lvls) {
 MaxFC <- max(XTTclean$Fold.Change) + 0.325 
 
 ####  Check if MaxFC exceeds upper point of y-axis, set it back if needed #### 
-if(MaxFC > ymaxi) MaxFC <- ymaxi
+if(MaxFC > (ymaxi + 0.05)) MaxFC <- (ymaxi + 0.05)
 
 ####  Postion of number of measurments #### 
 nlabel.df <- data.frame(Harvest = lvls,

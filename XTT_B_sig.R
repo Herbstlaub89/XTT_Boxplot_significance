@@ -27,6 +27,13 @@ yaxis <- "Fold change (irradiated/control)"
 # Labels for the ticks on the x axis 
 xaxisticks <- c("CTRL","24","48", "72")
 
+# Outliers-test, set to 0 to disable
+maxoutliers <- 1 # maximal outliers to remove in each direction
+# (highest AND lowest value are checked!)
+
+senivity <- 1 # smaller values increase senitivity of outlier detection
+# value of 1 means if highest value > second highst value + iqr*factor: outlier
+# the same applies for the smallest value
 
 ###################### End of setup section ####################################
 
@@ -69,8 +76,34 @@ if(is.factor(XTTclean$Fold.Change)){
   XTTclean$Fold.Change <- as.numeric(XTTclean$Fold.Change)
 }
 
+#### add row index for referencing ###
+
+XTTclean$id <- c(1:nrow(XTTclean))
+
 #### get number of measurments #### 
 lvls <- levels(XTTclean$Harvest)
+
+#### outliers test for each level ####
+reflist <- XTTclean[,c("id", "Fold.Change", "Harvest")]
+
+for(lvl in lvls) {
+  outliers <- 0
+  while(outliers < maxoutliers ) {
+    idlist <- c()
+    outliers <- outliers +1
+    subref <- reflist[reflist$Harvest == lvl,]
+    subref <- subref[order(subref$Fold.Change),]
+    iqr <- IQR(subref$Fold.Change)
+    if(subref[1,2] < (subref[2,2] - iqr*senivity)) {
+      idlist <- append(idlist, subref$id[1])
+    }
+    if(subref[nrow(subref),2] > (subref[nrow(subref)-1,2] + iqr*senivity)) {
+      idlist <- append(idlist, subref$id[nrow(subref)])
+    }
+    XTTclean <- XTTclean[!(XTTclean$id %in% idlist),]
+  }
+}
+
 
 #### t-test to get significant differences #### 
 tt <- pairwise.t.test(x = XTTclean$Fold.Change, 
@@ -170,3 +203,7 @@ for(i in seq_along(lines)) {
 
 ####  draw stars #### 
 p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.numeric(y)))
+
+#### Histogram as diagnosis plot ####
+windows(8,8)
+ggplot(XTTclean, aes(x = Fold.Change, color = Harvest, fill = Harvest)) + geom_histogram(alpha = 0.8, binwidth =  0.05) + facet_grid(Harvest~.)

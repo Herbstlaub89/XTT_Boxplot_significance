@@ -56,35 +56,58 @@ for(i in grep("lab", names(XTTresults), ignore.case=T)) {
 
 names(XTTresults)[grep("data", names(XTTresults), ignore.case=T)] <- "Data"
 names(XTTresults)[grep("harvest", names(XTTresults), ignore.case=T)] <- "Harvest"
-names(XTTresults)[grep("fold", names(XTTresults), ignore.case=T)] <- "Fold.Change"
+
 
 #### Clean data #### 
 XTTclean1 <- subset(XTTresults, Data != 0)
 XTTclean2 <- subset(XTTclean1, !is.na(Data))
-XTTclean3 <- subset(XTTclean2, Row != skiprows) #uncomment to exclude righ and left  wells
-sel <- XTTclean3[,"Column"] %in% skipcolumns
-XTTclean <- XTTclean3[!sel,] #uncomment to exclude top and bottom and border wells
+selrow <- XTTclean2$Row %in% skiprows
+XTTclean3 <- XTTclean2[!selrow,] #exclude righ and left  wells
+selcol <- XTTclean3$Column %in% skipcolumns
+XTTclean <- XTTclean3[!selcol,] #exclude top and bottom and border wells
 
 #### Set types of columns correctly #### 
 XTTclean$Harvest <- as.factor(XTTclean$Harvest)
 XTTclean$Column <- as.factor(XTTclean$Column)
 XTTclean$Row <- as.factor(XTTclean$Row)
 
-if(is.factor(XTTclean$Fold.Change)){
-  XTTclean$Fold.Change <- as.numeric(levels(XTTclean$Fold.Change))[XTTclean$Fold.Change]
-} else {
-  XTTclean$Fold.Change <- as.numeric(XTTclean$Fold.Change)
-}
+# if(is.factor(XTTclean$FoldChange)){
+#   XTTclean$FoldChange <- as.numeric(levels(XTTclean$FoldChange))[XTTclean$FoldChange]
+# } else {
+#   XTTclean$FoldChange <- as.numeric(XTTclean$FoldChange)
+# }
 
 #### add row index for referencing ###
-
 XTTclean$id <- c(1:nrow(XTTclean))
 
 #### get number of measurments #### 
 lvls <- levels(XTTclean$Harvest)
 
+#### calculate averages for control groups ####
+# create df to store means
+avg <- data.frame(Avg = as.numeric(), 
+                  Harvest = as.numeric(),
+                  PlateID = as.numeric())
+
+# calculate averages for each combination of harvesting time and PlateID
+for(lvl in lvls) {
+  for(pID in unique(XTTclean$PlateID[XTTclean$Harvest == lvl]))
+    avg[nrow(avg)+1,] <- c(mean(XTTclean$Data[XTTclean$Harvest == lvl 
+                                            & XTTclean$PlateID == pID]),
+                          lvl, 
+                          pID)
+}
+
+#### calculate FoldChanges ####
+for(i in 1:nrow(XTTclean)) {
+  XTTclean$FoldChange[i] <- XTTclean$Data[i]/as.numeric(avg$Avg[
+    avg$Harvest == 0 &
+      avg$PlateID == XTTclean$PlateID[i]])
+}
+  
+
 #### outliers test for each level ####
-reflist <- XTTclean[,c("id", "Fold.Change", "Harvest")]
+reflist <- XTTclean[,c("id", "FoldChange", "Harvest")]
 outlCount <- 0
 for(lvl in lvls) {
   outliers <- 0
@@ -92,8 +115,8 @@ for(lvl in lvls) {
     idlist <- c()
     outliers <- outliers +1
     subref <- reflist[reflist$Harvest == lvl,]
-    subref <- subref[order(subref$Fold.Change),]
-    iqr <- IQR(subref$Fold.Change)
+    subref <- subref[order(subref$FoldChange),]
+    iqr <- IQR(subref$FoldChange)
     if(subref[1,2] < (subref[2,2] - iqr*senivity)) {
       idlist <- append(idlist, subref$id[1])
       outlCount <- outlCount + 1
@@ -108,7 +131,7 @@ for(lvl in lvls) {
 
 
 #### t-test to get significant differences #### 
-tt <- pairwise.t.test(x = XTTclean$Fold.Change, 
+tt <- pairwise.t.test(x = XTTclean$FoldChange, 
                       g = XTTclean$Harvest)
 
 #### function that assigns stars according to significance level #### 
@@ -155,29 +178,29 @@ for(i in lvls) {
 }
 
 ####  Get maximal FC value and add offset as basis for postion of lines #### 
-MaxFC <- max(XTTclean$Fold.Change) + 0.325 
+MaxFC <- max(XTTclean$FoldChange) + 0.325 
 
 ####  Check if MaxFC exceeds upper point of y-axis, set it back if needed #### 
 if(MaxFC > (ymaxi + 0.05)) MaxFC <- (ymaxi + 0.05)
 
 ####  Postion of number of measurments #### 
 nlabel.df <- data.frame(Harvest = lvls,
-                        Fold.Change = ymini)
+                        FoldChange = ymini)
 
 ######### Plot ################
 # Set plot size
 windows(8,8)
 
 #####  Basic setup of plot #### 
-p <- ggplot(XTTclean, aes(Harvest, Fold.Change)) + 
+p <- ggplot(XTTclean, aes(Harvest, FoldChange)) + 
   geom_boxplot(outlier.shape = 3, aes(group = Harvest)) +
   coord_cartesian(ylim = c(ymini, ymaxi)) +
   theme_bw() + theme(panel.grid = element_blank()) +
   ggtitle(maintitel, subtitel) + ylab(yaxis) + xlab(xaxis) +
   # geom_jitter(width = 0.1, height = 0) + #uncomment to see individual datapoints
   scale_y_continuous(breaks=seq(ymini,ymaxi,0.1)) + 
-  scale_x_discrete(labels= xaxisticks)  # uncomment to manualy set x-axis ticks
-  # geom_text(data = nlabel.df, label = lvlslabel)   # uncomment to lable number of observations
+  scale_x_discrete(labels= xaxisticks) + # uncomment to manualy set x-axis ticks
+   geom_text(data = nlabel.df, label = lvlslabel)   # uncomment to lable number of observations
   
   
   ######### postion of  lines and stars ######### 
@@ -208,4 +231,4 @@ p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.num
 
 #### Histogram as diagnosis plot ####
 windows(8,8)
-ggplot(XTTclean, aes(x = Fold.Change, color = Harvest, fill = Harvest)) + geom_histogram(alpha = 0.8, binwidth =  0.05) + facet_grid(Harvest~.)
+ggplot(XTTclean, aes(x = FoldChange, color = Harvest, fill = Harvest)) + geom_histogram(alpha = 0.8, binwidth =  0.05) + facet_grid(Harvest~.)

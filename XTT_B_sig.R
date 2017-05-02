@@ -14,7 +14,7 @@ ymini = 0.5
 ymaxi = 1.5
 
 # Rows and columns not to use 
-# (eg. boarders of plate or boarder between irradiated/control)
+# (eg. borders of plate or border between irradiated/control)
 skiprows <- c("A", "H")
 skipcolumns <- c(1,6,7,12)
 
@@ -57,7 +57,6 @@ for(i in grep("lab", names(XTTresults), ignore.case=T)) {
 names(XTTresults)[grep("data", names(XTTresults), ignore.case=T)] <- "Data"
 names(XTTresults)[grep("harvest", names(XTTresults), ignore.case=T)] <- "Harvest"
 
-
 #### Clean data #### 
 XTTclean1 <- subset(XTTresults, Data != 0)
 XTTclean2 <- subset(XTTclean1, !is.na(Data))
@@ -93,9 +92,9 @@ avg <- data.frame(Avg = as.numeric(),
 for(lvl in lvls) {
   for(pID in unique(XTTclean$PlateID[XTTclean$Harvest == lvl]))
     avg[nrow(avg)+1,] <- c(mean(XTTclean$Data[XTTclean$Harvest == lvl 
-                                            & XTTclean$PlateID == pID]),
-                          lvl, 
-                          pID)
+                                              & XTTclean$PlateID == pID]),
+                           lvl, 
+                           pID)
 }
 
 #### calculate FoldChanges ####
@@ -104,7 +103,6 @@ for(i in 1:nrow(XTTclean)) {
     avg$Harvest == 0 &
       avg$PlateID == XTTclean$PlateID[i]])
 }
-  
 
 #### outliers test for each level ####
 reflist <- XTTclean[,c("id", "FoldChange", "Harvest")]
@@ -128,7 +126,6 @@ for(lvl in lvls) {
     XTTclean <- XTTclean[!(XTTclean$id %in% idlist),]
   }
 }
-
 
 #### t-test to get significant differences #### 
 tt <- pairwise.t.test(x = XTTclean$FoldChange, 
@@ -166,6 +163,7 @@ for(i in colnames(tt$p.value)) {
     stars[nrow(stars)+1,] <- c(i,j,get.stars(tt$p.value[j,i]),which(i==lvls),which(j==lvls)) 
   }   
 }
+
 #### drop entries that are not significant #### 
 stars <- stars[stars$value != "",]
 
@@ -201,13 +199,12 @@ p <- ggplot(XTTclean, aes(Harvest, FoldChange)) +
   #geom_text(data = nlabel.df, label = lvlslabel) + # uncomment to lable number of observations
   scale_y_continuous(breaks=seq(ymini,ymaxi,0.1)) + 
   scale_x_discrete(labels= xaxisticks)  # uncomment to manualy set x-axis ticks
-  
-  
-  
-  ######### postion of  lines and stars ######### 
+
+######### postion of  lines and stars ######### 
 # create list of dataframes for coordinates of lines
 lines <- vector("list", nrow(stars))
 starlabel <- data.frame("label" = integer(), "x" = integer(), "y" = integer())
+
 # loop over stars dataframe and generate coordinates for lines
 for(i in seq_along(stars[,1])) {
   lines[[i]] <- data.frame(xli =  as.numeric(c(rep(stars$poscol[i],2),
@@ -217,9 +214,9 @@ for(i in seq_along(stars[,1])) {
                                    MaxFC - 2*i*0.025+0.025,  
                                    MaxFC - 2*i*0.025+0.025, 
                                    MaxFC - 2*i*0.025))
+  
   # loop over stars dataframe and generate coordinates for stars, x is between compared groups(mean), and y depends on MaxFC and i 
   starlabel[i,] <- c(stars$value[i], mean(c(as.numeric(stars$poscol[i]), as.numeric(stars$posrow[i]))), (MaxFC - i*0.025-i*0.025+0.035))
-  
 }
 
 ##### draw lines #### 
@@ -227,7 +224,7 @@ for(i in seq_along(lines)) {
   p <- p + geom_line(data = lines[[i]], aes(x = xli, y = yli))
 } 
 
-####  draw stars #### 
+####  draw stars, show plot #### 
 p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.numeric(y)))
 
 #### Histogram as diagnosis plot ####

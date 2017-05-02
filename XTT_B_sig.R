@@ -28,10 +28,10 @@ yaxis <- "Fold change (irradiated/control)"
 xaxisticks <- c("CTRL","24","48", "72")
 
 # Outliers-test, set to 0 to disable
-maxoutliers <- 1 # maximal outliers to remove in each direction
+maxoutliers <- 1 # maximal outliers to remove in each direction and group
 # (highest AND lowest value are checked)
 
-senivity <- 1 # smaller values increase senitivity of outlier detection
+threshold <- 1 # smaller values increase senitivity of outlier detection
 # value of 1 means if highest value > second highst value + iqr*1 -> outlier
 # the same applies for the smallest value
 
@@ -115,11 +115,11 @@ for(lvl in lvls) {
     subref <- reflist[reflist$Harvest == lvl,]
     subref <- subref[order(subref$FoldChange),]
     iqr <- IQR(subref$FoldChange)
-    if(subref[1,2] < (subref[2,2] - iqr*senivity)) {
+    if(subref[1,2] < (subref[2,2] - iqr*threshold)) {
       idlist <- append(idlist, subref$id[1])
       outlCount <- outlCount + 1
     }
-    if(subref[nrow(subref),2] > (subref[nrow(subref)-1,2] + iqr*senivity)) {
+    if(subref[nrow(subref),2] > (subref[nrow(subref)-1,2] + iqr*threshold)) {
       idlist <- append(idlist, subref$id[nrow(subref)])
       outlCount <- outlCount + 1
     }

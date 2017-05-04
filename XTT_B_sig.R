@@ -229,9 +229,10 @@ p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.num
 
 #### Histogram as diagnosis plot ####
 windows(8,8)
-ggplot(XTTclean, aes(x = FoldChange, color = Harvest, fill = Harvest)) +
-  geom_histogram(alpha = 0.8, binwidth =  0.05) +
-  facet_grid(Harvest~.) +
-  theme_bw() 
+ggplot(XTTclean, 
+       aes(x = FoldChange, color = Harvest, fill = Harvest)) +
+       geom_histogram(alpha = 0.8, binwidth =  0.05) +
+       facet_grid(Harvest~.) +
+       theme_bw() 
   
 

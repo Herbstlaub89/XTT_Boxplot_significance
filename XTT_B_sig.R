@@ -195,7 +195,7 @@ p <- ggplot(XTTclean, aes(Harvest, FoldChange)) +
   coord_cartesian(ylim = c(ymini, ymaxi)) +
   theme_bw() + theme(panel.grid = element_blank()) +
   ggtitle(maintitel, subtitel) + ylab(yaxis) + xlab(xaxis) +
-  # geom_jitter(width = 0.1, height = 0) + #uncomment to see individual datapoints
+  #geom_jitter(width = 0.1, height = 0) + #uncomment to see individual datapoints
   #geom_text(data = nlabel.df, label = lvlslabel) + # uncomment to lable number of observations
   scale_y_continuous(breaks=seq(ymini,ymaxi,0.1)) + 
   scale_x_discrete(labels= xaxisticks)  # uncomment to manualy set x-axis ticks
@@ -229,4 +229,9 @@ p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.num
 
 #### Histogram as diagnosis plot ####
 windows(8,8)
-ggplot(XTTclean, aes(x = FoldChange, color = Harvest, fill = Harvest)) + geom_histogram(alpha = 0.8, binwidth =  0.05) + facet_grid(Harvest~.)
+ggplot(XTTclean, aes(x = FoldChange, color = Harvest, fill = Harvest)) +
+  geom_histogram(alpha = 0.8, binwidth =  0.05) +
+  facet_grid(Harvest~.) +
+  theme_bw() 
+  
+

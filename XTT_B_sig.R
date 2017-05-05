@@ -27,18 +27,24 @@ yaxis <- "Fold change (irradiated/control)"
 # Labels for the ticks on the x axis 
 xaxisticks <- c("CTRL","24","48", "72")
 
-# Balance group sizes? 
+### Balance group sizes? 
 # Otherwise a Controlgroup with more observations can lead 
 # to overestimation of significance
 balanceGroups = TRUE
 
-# Outliers-test, set to 0 to disable
-maxoutliers <- 5 # maximal outliers to remove in each direction and group
+### Outliers-test, set to 0 to disable
+# maximal outliers to remove in each direction and group
 # (highest AND lowest value are checked)
+maxoutliers <- 1 
 
-threshold <- 1 # smaller values increase senitivity of outlier detection
-# value of 1 means if highest value > second highst value + iqr*1 -> outlier
+# smaller values increase senitivity of outlier detection
+# if highest value > (second highst value + iqr * threshold) -> outlier
 # the same applies for the smallest value
+threshold <- 1 
+
+### Show histogram as diagnosis plot?
+# useful to manualy detect outliers and afterwards set the maxoutliers variable accordingly
+showHist = FALSE
 
 ###################### End of setup section ####################################
 
@@ -51,22 +57,22 @@ library("readxl")
 
 #### Load data ####
 XTTpath <- file.choose()
-XTTresults <- read_excel(XTTpath, 2)
+XTTraw <- read_excel(XTTpath, 2)
 
 #### Name Columns corretly #### 
-for(i in grep("lab", names(XTTresults), ignore.case=T)) {
-  if(any(XTTresults[i] == LETTERS[1:8])) {
-    names(XTTresults)[i] <- "Row"
-  } else if(any(XTTresults[i] == c(1:12))) {
-    names(XTTresults)[i] <- "Column"      
+for(i in grep("lab", names(XTTraw), ignore.case=T)) {
+  if(any(XTTraw[i] == LETTERS[1:8])) {
+    names(XTTraw)[i] <- "Row"
+  } else if(any(XTTraw[i] == c(1:12))) {
+    names(XTTraw)[i] <- "Column"      
   }
 }
 
-names(XTTresults)[grep("data", names(XTTresults), ignore.case=T)] <- "Data"
-names(XTTresults)[grep("harvest", names(XTTresults), ignore.case=T)] <- "Harvest"
+names(XTTraw)[grep("data", names(XTTraw), ignore.case=T)] <- "Data"
+names(XTTraw)[grep("harvest", names(XTTraw), ignore.case=T)] <- "Harvest"
 
 #### Clean data #### 
-XTTclean1 <- subset(XTTresults, Data != 0)
+XTTclean1 <- subset(XTTraw, Data != 0)
 XTTclean2 <- subset(XTTclean1, !is.na(Data))
 selrow <- XTTclean2$Row %in% skiprows
 XTTclean3 <- XTTclean2[!selrow,] #exclude righ and left  wells
@@ -77,12 +83,6 @@ XTTclean <- XTTclean3[!selcol,] #exclude top and bottom and border wells
 XTTclean$Harvest <- as.factor(XTTclean$Harvest)
 XTTclean$Column <- as.factor(XTTclean$Column)
 XTTclean$Row <- as.factor(XTTclean$Row)
-
-# if(is.factor(XTTclean$FoldChange)){
-#   XTTclean$FoldChange <- as.numeric(levels(XTTclean$FoldChange))[XTTclean$FoldChange]
-# } else {
-#   XTTclean$FoldChange <- as.numeric(XTTclean$FoldChange)
-# }
 
 #### add row index for referencing ###
 XTTclean$id <- c(1:nrow(XTTclean))
@@ -106,12 +106,13 @@ for(lvl in lvls) {
 }
 
 #### calculate FoldChanges ####
-for(i in 1:nrow(XTTclean)) {
-  XTTclean$FoldChange[i] <- XTTclean$Data[i]/as.numeric(avg$Avg[
-    avg$Harvest == 0 &
-      avg$PlateID == XTTclean$PlateID[i]])
-}
-
+suppressWarnings( # suppress warning because of uninitialised column: 'FoldChange' 
+  for(i in 1:nrow(XTTclean)) {
+    XTTclean$FoldChange[i] <- XTTclean$Data[i]/as.numeric(avg$Avg[
+      avg$Harvest == 0 &
+        avg$PlateID == XTTclean$PlateID[i]])
+  }
+)
 #### outliers test for each level ####
 reflist <- XTTclean[,c("id", "FoldChange", "Harvest")]
 outlCount <- 0
@@ -143,13 +144,13 @@ for(i in lvls) {
 
 #### Balance group-sizes #####
 # get size of smallest group
-if(balanceGroups == TRUE) {
-includeRows <- c() # reset vecotor
-gmin <- min(lvlslabel) # get minimal group size
-for(i in seq_along(lvlslabel)) {
-  includeRows <- append(includeRows,sample(x = which(XTTout$Harvest == lvls[i]), size = gmin))
-}
-XTTplot <- XTTout[includeRows,]
+if(balanceGroups) {
+  includeRows <- c() # reset vecotor
+  gmin <- min(lvlslabel) # get minimal group size
+  for(i in seq_along(lvlslabel)) {
+    includeRows <- append(includeRows,sample(x = which(XTTout$Harvest == lvls[i]), size = gmin))
+  }
+  XTTplot <- XTTout[includeRows,]
 } else {
   XTTplot <- XTTout
 }
@@ -248,9 +249,11 @@ for(i in seq_along(lines)) {
 p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.numeric(y)))
 
 #### Histogram as diagnosis plot ####
-windows(8,8)
-ggplot(XTTplot, 
-       aes(x = FoldChange, color = Harvest, fill = Harvest)) +
-       geom_histogram(alpha = 0.8, binwidth =  0.05) +
-       facet_grid(Harvest~.) +
-       theme_bw() 
+if(showHist) {
+  windows(8,8)
+  ggplot(XTTplot, 
+         aes(x = FoldChange, color = Harvest, fill = Harvest)) +
+    geom_histogram(alpha = 0.8, binwidth =  0.05) +
+    facet_grid(Harvest~.) +
+    theme_bw() 
+}

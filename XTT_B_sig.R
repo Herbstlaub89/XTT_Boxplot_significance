@@ -19,16 +19,21 @@ skiprows <- c("A", "H")
 skipcolumns <- c(1,6,7,12)
 
 # Main-, sub- and axis titel of plot
-maintitel <- "XTT assay"
-subtitel <- "ADSC irratiated 7.5min (630nm, 23mW/cm), 3 plates each time point"
-xaxis <- "Time since irradiation [h]"
+maintitel <- "XTT assay: ADSC incubated with preconditioned medium from Fibroblasts"
+subtitel <- "irradiated 30 min (453 nm, 23 mW/cm)"
+xaxis <- "Time since precond. medium applied [h]"
 yaxis <- "Fold change (irradiated/control)"
 
 # Labels for the ticks on the x axis 
 xaxisticks <- c("CTRL","24","48", "72")
 
+# Balance group sizes? 
+# Otherwise a Controlgroup with more observations can lead 
+# to overestimation of significance
+balanceGroups = TRUE
+
 # Outliers-test, set to 0 to disable
-maxoutliers <- 1 # maximal outliers to remove in each direction and group
+maxoutliers <- 5 # maximal outliers to remove in each direction and group
 # (highest AND lowest value are checked)
 
 threshold <- 1 # smaller values increase senitivity of outlier detection
@@ -37,7 +42,10 @@ threshold <- 1 # smaller values increase senitivity of outlier detection
 
 ###################### End of setup section ####################################
 
-####  Load ggplot2 for plotting and readxl for excel import #### 
+# Set Random seed
+set.seed(42)
+
+# Load ggplot2 for plotting and readxl for excel import  
 library("ggplot2")
 library("readxl")
 
@@ -107,12 +115,12 @@ for(i in 1:nrow(XTTclean)) {
 #### outliers test for each level ####
 reflist <- XTTclean[,c("id", "FoldChange", "Harvest")]
 outlCount <- 0
+idlist <- c()
 for(lvl in lvls) {
   outliers <- 0
   while(outliers < maxoutliers ) {
-    idlist <- c()
     outliers <- outliers +1
-    subref <- reflist[reflist$Harvest == lvl,]
+    subref <- reflist[reflist$Harvest == lvl & !(reflist$id %in% idlist),]
     subref <- subref[order(subref$FoldChange),]
     iqr <- IQR(subref$FoldChange)
     if(subref[1,2] < (subref[2,2] - iqr*threshold)) {
@@ -123,13 +131,32 @@ for(lvl in lvls) {
       idlist <- append(idlist, subref$id[nrow(subref)])
       outlCount <- outlCount + 1
     }
-    XTTclean <- XTTclean[!(XTTclean$id %in% idlist),]
   }
+}
+XTTout <- XTTclean[!(XTTclean$id %in% idlist),]
+
+#### generate labels for number of measurments #### 
+lvlslabel <- c() #reset vector
+for(i in lvls) {
+  lvlslabel <- append(lvlslabel, nrow(subset(XTTout, Harvest == i)))
+}
+
+#### Balance group-sizes #####
+# get size of smallest group
+if(balanceGroups == TRUE) {
+includeRows <- c() # reset vecotor
+gmin <- min(lvlslabel) # get minimal group size
+for(i in seq_along(lvlslabel)) {
+  includeRows <- append(includeRows,sample(x = which(XTTout$Harvest == lvls[i]), size = gmin))
+}
+XTTplot <- XTTout[includeRows,]
+} else {
+  XTTplot <- XTTout
 }
 
 #### t-test to get significant differences #### 
-tt <- pairwise.t.test(x = XTTclean$FoldChange, 
-                      g = XTTclean$Harvest)
+tt <- pairwise.t.test(x = XTTplot$FoldChange, 
+                      g = XTTplot$Harvest)
 
 #### function that assigns stars according to significance level #### 
 get.stars <- function(pvalue) {
@@ -167,16 +194,8 @@ for(i in colnames(tt$p.value)) {
 #### drop entries that are not significant #### 
 stars <- stars[stars$value != "",]
 
-#### generate labels for number of measurments #### 
-lvlslabel <- c() #reset vector
-for(i in lvls) {
-  lvlslabel <- append(lvlslabel, 
-                      paste("n = ", 
-                            nrow(subset(XTTclean, Harvest == i))))
-}
-
 ####  Get maximal FC value and add offset as basis for postion of lines #### 
-MaxFC <- max(XTTclean$FoldChange) + 0.325 
+MaxFC <- max(XTTplot$FoldChange) + 0.325 
 
 ####  Check if MaxFC exceeds upper point of y-axis, set it back if needed #### 
 if(MaxFC > (ymaxi + 0.05)) MaxFC <- (ymaxi + 0.05)
@@ -190,13 +209,14 @@ nlabel.df <- data.frame(Harvest = lvls,
 windows(8,8)
 
 #####  Basic setup of plot #### 
-p <- ggplot(XTTclean, aes(Harvest, FoldChange)) + 
+p <- ggplot(XTTplot, aes(Harvest, FoldChange)) + 
   geom_boxplot(outlier.shape = 3, aes(group = Harvest)) +
   coord_cartesian(ylim = c(ymini, ymaxi)) +
   theme_bw() + theme(panel.grid = element_blank()) +
   ggtitle(maintitel, subtitel) + ylab(yaxis) + xlab(xaxis) +
   #geom_jitter(width = 0.1, height = 0) + #uncomment to see individual datapoints
-  #geom_text(data = nlabel.df, label = lvlslabel) + # uncomment to lable number of observations
+  #geom_text(data = nlabel.df, label = paste("n = ",lvlslabel)) + #number of observations/group
+  #does not work if balanceGroups is TRUE because original number is shown
   scale_y_continuous(breaks=seq(ymini,ymaxi,0.1)) + 
   scale_x_discrete(labels= xaxisticks)  # uncomment to manualy set x-axis ticks
 
@@ -229,10 +249,8 @@ p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.num
 
 #### Histogram as diagnosis plot ####
 windows(8,8)
-ggplot(XTTclean, 
+ggplot(XTTplot, 
        aes(x = FoldChange, color = Harvest, fill = Harvest)) +
        geom_histogram(alpha = 0.8, binwidth =  0.05) +
        facet_grid(Harvest~.) +
        theme_bw() 
-  
-

@@ -72,12 +72,12 @@ names(XTTraw)[grep("data", names(XTTraw), ignore.case=T)] <- "Data"
 names(XTTraw)[grep("harvest", names(XTTraw), ignore.case=T)] <- "Harvest"
 
 #### Clean data #### 
-XTTclean1 <- subset(XTTraw, Data != 0)
-XTTclean2 <- subset(XTTclean1, !is.na(Data))
+XTTclean1 <- subset(XTTraw, Data != 0) #exclude empty wells
+XTTclean2 <- subset(XTTclean1, !is.na(Data)) #exclude possible NA´s
 selrow <- XTTclean2$Row %in% skiprows
-XTTclean3 <- XTTclean2[!selrow,] #exclude righ and left  wells
+XTTclean3 <- XTTclean2[!selrow,] #exclude rows
 selcol <- XTTclean3$Column %in% skipcolumns
-XTTclean <- XTTclean3[!selcol,] #exclude top and bottom and border wells
+XTTclean <- XTTclean3[!selcol,] #exclude columns
 
 #### Set types of columns correctly #### 
 XTTclean$Harvest <- as.factor(XTTclean$Harvest)
@@ -139,7 +139,10 @@ XTTout <- XTTclean[!(XTTclean$id %in% idlist),]
 #### generate labels for number of measurments #### 
 lvlslabel <- c() #reset vector
 for(i in lvls) {
-  lvlslabel <- append(lvlslabel, nrow(subset(XTTout, Harvest == i)))
+  lvlslabel <- append(
+    lvlslabel, 
+    nrow(subset(XTTout, Harvest == i))
+    )
 }
 
 #### Balance group-sizes #####
@@ -148,7 +151,10 @@ if(balanceGroups) {
   includeRows <- c() # reset vecotor
   gmin <- min(lvlslabel) # get minimal group size
   for(i in seq_along(lvlslabel)) {
-    includeRows <- append(includeRows,sample(x = which(XTTout$Harvest == lvls[i]), size = gmin))
+    includeRows <- append(includeRows,
+                          sample(x = which(XTTout$Harvest == lvls[i]), 
+                                 size = gmin)
+                          )
   }
   XTTplot <- XTTout[includeRows,]
 } else {

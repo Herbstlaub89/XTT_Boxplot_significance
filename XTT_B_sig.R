@@ -90,31 +90,8 @@ XTTclean$id <- c(1:nrow(XTTclean))
 #### get number of measurments #### 
 lvls <- levels(XTTclean$Harvest)
 
-#### calculate averages for control groups ####
-# create df to store means
-avg <- data.frame(Avg = as.numeric(), 
-                  Harvest = as.numeric(),
-                  PlateID = as.numeric())
-
-# calculate averages for each combination of harvesting time and PlateID
-for(lvl in lvls) {
-  for(pID in unique(XTTclean$PlateID[XTTclean$Harvest == lvl]))
-    avg[nrow(avg)+1,] <- c(mean(XTTclean$Data[XTTclean$Harvest == lvl 
-                                              & XTTclean$PlateID == pID]),
-                           lvl, 
-                           pID)
-}
-
-#### calculate FoldChanges ####
-suppressWarnings( # suppress warning because of uninitialised column: 'FoldChange' 
-  for(i in 1:nrow(XTTclean)) {
-    XTTclean$FoldChange[i] <- XTTclean$Data[i]/as.numeric(avg$Avg[
-      avg$Harvest == 0 &
-        avg$PlateID == XTTclean$PlateID[i]])
-  }
-)
 #### outliers test for each level ####
-reflist <- XTTclean[,c("id", "FoldChange", "Harvest")]
+reflist <- XTTclean[,c("id", "Data", "Harvest")] # list only needed data for outlier test
 outlCount <- 0
 idlist <- c()
 for(lvl in lvls) {
@@ -122,8 +99,8 @@ for(lvl in lvls) {
   while(outliers < maxoutliers ) {
     outliers <- outliers +1
     subref <- reflist[reflist$Harvest == lvl & !(reflist$id %in% idlist),]
-    subref <- subref[order(subref$FoldChange),]
-    iqr <- IQR(subref$FoldChange)
+    subref <- subref[order(subref$Data),]
+    iqr <- IQR(subref$Data)
     if(subref[1,2] < (subref[2,2] - iqr*threshold)) {
       idlist <- append(idlist, subref$id[1])
       outlCount <- outlCount + 1
@@ -135,6 +112,31 @@ for(lvl in lvls) {
   }
 }
 XTTout <- XTTclean[!(XTTclean$id %in% idlist),]
+
+#### calculate averages for control groups ####
+# create df to store means
+avg <- data.frame(Avg = as.numeric(), 
+                  Harvest = as.numeric(),
+                  PlateID = as.numeric())
+
+# calculate averages for each combination of harvesting time and PlateID
+for(lvl in lvls) {
+  for(pID in unique(XTTout$PlateID[XTTout$Harvest == lvl]))
+    avg[nrow(avg)+1,] <- c(mean(XTTout$Data[XTTout$Harvest == lvl 
+                                              & XTTout$PlateID == pID]),
+                           lvl, 
+                           pID)
+}
+
+#### calculate FoldChanges ####
+suppressWarnings( # suppress warning because of uninitialised column: 'FoldChange' 
+  for(i in 1:nrow(XTTout)) {
+    XTTout$FoldChange[i] <- XTTout$Data[i]/as.numeric(avg$Avg[
+      avg$Harvest == 0 &
+        avg$PlateID == XTTout$PlateID[i]])
+  }
+)
+
 
 #### generate labels for number of measurments #### 
 lvlslabel <- c() #reset vector

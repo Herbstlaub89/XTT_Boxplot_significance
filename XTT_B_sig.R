@@ -253,8 +253,10 @@ for(i in seq_along(lines)) {
   p <- p + geom_line(data = lines[[i]], aes(x = xli, y = yli))
 } 
 
-####  draw stars, show plot #### 
+#### draw stars, show plot #### 
 p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.numeric(y)))
+
+
 
 #### Histogram as diagnosis plot ####
 if(showHist) {

@@ -267,3 +267,9 @@ if(showHist) {
     facet_grid(Harvest~.) +
     theme_bw() 
 }
+
+if(outlCount > 0) {
+  cat(paste(sep = "",outlCount, " outliers were found and removed.\n",
+                       "The following list contains observations considered outliers:\n\n"))
+  data.frame(XTTclean[idlist,])
+}

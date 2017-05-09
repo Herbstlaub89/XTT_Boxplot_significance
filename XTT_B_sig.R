@@ -28,7 +28,7 @@ yaxis <- "Fold change (irradiated/control)"
 xaxisticks <- c("CTRL","24","48", "72")
 
 ### Balance group sizes? 
-# Otherwise a Controlgroup with more observations can lead 
+# Otherwise a controlgroup with more observations can lead 
 # to overestimation of significance
 balanceGroups = TRUE
 
@@ -37,10 +37,11 @@ balanceGroups = TRUE
 # (highest AND lowest value are checked)
 maxoutliers <- 1 
 
-# smaller values increase senitivity of outlier detection
-# if highest value > (second highst value + iqr * threshold) -> outlier
-# the same applies for the smallest value
-threshold <- 1 
+# smaller values increase sensitivity of outlier detection
+# if highest value > (75% quantile + iqr * threshold) -> outlier
+# if lowest value < (25% quantile - iqr * threshold) -> outlier
+# a threshold of 1.5 is a good starting point 
+threshold <- 1.5 
 
 ### Show histogram as diagnosis plot?
 # useful to manualy detect outliers and afterwards set the maxoutliers variable accordingly
@@ -48,7 +49,7 @@ showHist = FALSE
 
 ###################### End of setup section ####################################
 
-# Set Random seed
+# Set Random seed (mostly affects the group balancing)
 set.seed(42)
 
 # Load ggplot2 for plotting and readxl for excel import  
@@ -101,11 +102,11 @@ for(lvl in lvls) {
     subref <- reflist[reflist$Harvest == lvl & !(reflist$id %in% idlist),]
     subref <- subref[order(subref$Data),]
     iqr <- IQR(subref$Data)
-    if(subref[1,2] < (subref[2,2] - iqr*threshold)) {
+    if(subref[1,2] < (quantile(subref$Data, 0.25) - iqr*threshold)) {
       idlist <- append(idlist, subref$id[1])
       outlCount <- outlCount + 1
     }
-    if(subref[nrow(subref),2] > (subref[nrow(subref)-1,2] + iqr*threshold)) {
+    if(subref[nrow(subref),2] > (quantile(subref$Data, 0.75) + iqr*threshold)) {
       idlist <- append(idlist, subref$id[nrow(subref)])
       outlCount <- outlCount + 1
     }

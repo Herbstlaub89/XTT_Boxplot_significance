@@ -10,8 +10,8 @@
 ###################### Change values here to fit your desire ###################
 
 # Scaling of y-axis
-ymini = 0.5 
-ymaxi = 1.5
+ymini = 0.8
+ymaxi = 1.8
 
 # Rows and columns not to use 
 # (eg. borders of plate or border between irradiated/control)
@@ -19,9 +19,9 @@ skiprows <- c("A", "H")
 skipcolumns <- c(1,6,7,12)
 
 # Main-, sub- and axis titel of plot
-maintitel <- "XTT assay: ADSC incubated with preconditioned medium from Fibroblasts"
-subtitel <- "irradiated 30 min (453 nm, 23 mW/cm)"
-xaxis <- "Time since precond. medium applied [h]"
+maintitel <- "XTT assay"
+subtitel <- "irradiated 30 min (630 nm, 23 mW/cm)"
+xaxis <- "Time since irradiation [h]"
 yaxis <- "Fold change (irradiated/control)"
 
 # Labels for the ticks on the x axis 
@@ -35,7 +35,7 @@ balanceGroups = TRUE
 ### Outliers-test, set to 0 to disable
 # maximal outliers to remove in each direction and group
 # (highest AND lowest value are checked)
-maxoutliers <- 1 
+maxoutliers <- 10 
 
 # smaller values increase sensitivity of outlier detection
 # if highest value > (75% quantile + iqr * threshold) -> outlier
@@ -60,7 +60,7 @@ library("readxl")
 XTTpath <- file.choose()
 XTTraw <- read_excel(XTTpath, 2)
 
-#### Name Columns corretly #### 
+#### Name Columns correctly #### 
 for(i in grep("lab", names(XTTraw), ignore.case=T)) {
   if(any(XTTraw[i] == LETTERS[1:8])) {
     names(XTTraw)[i] <- "Row"
@@ -255,18 +255,19 @@ for(i in seq_along(lines)) {
 } 
 
 #### draw stars, show plot #### 
-p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.numeric(y)))
+p <- p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.numeric(y)))
 
 
 
 #### Histogram as diagnosis plot ####
 if(showHist) {
   windows(8,8)
-  ggplot(XTTplot, 
+  hist <- ggplot(XTTplot, 
          aes(x = FoldChange, color = Harvest, fill = Harvest)) +
     geom_histogram(alpha = 0.8, binwidth =  0.05) +
     facet_grid(Harvest~.) +
-    theme_bw() 
+    theme_bw() +
+    scale_x_continuous(breaks=seq(ymini,ymaxi,0.1))
 }
 
 if(outlCount > 0) {

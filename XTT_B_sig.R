@@ -10,18 +10,18 @@
 ###################### Change values here to fit your desire ###################
 
 # Scaling of y-axis
-ymini = 0.8
-ymaxi = 1.8
+ymini = 0.5
+ymaxi = 1.5
 
 # Rows and columns not to use 
 # (eg. borders of plate or border between irradiated/control)
-skiprows <- c("A", "H")
-skipcolumns <- c(1,6,7,12)
+skiprows <- c("A", "H") 
+skipcolumns <- c(1,6,7,12) 
 
 # Main-, sub- and axis titel of plot
-maintitel <- "XTT assay"
-subtitel <- "ADSC irradiated 30 min (630 nm, 23 mW/cm)"
-xaxis <- "Time since irradiation [h]"
+maintitel <- "XTT assay of ADSC´s"
+subtitel <- "transfered medium from Fibroblasts\nirradiated 30 min (453 nm, 23 mW/cm)"
+xaxis <- "Time since medium transfer [h]"
 yaxis <- "Fold change (irradiated/control)"
 
 # Labels for the ticks on the x axis 
@@ -45,16 +45,17 @@ threshold <- 1.5
 
 ### Show histogram as diagnosis plot?
 # useful to manualy detect outliers and afterwards set the maxoutliers variable accordingly
-showHist = FALSE
+showHist = TRUE
 
 ###################### End of setup section ####################################
 
 # Set Random seed (mostly affects the group balancing)
 set.seed(42)
 
-# Load ggplot2 for plotting and readxl for excel import  
+# Load ggplot2 for plotting, readxl for excel import and dplyr for cleaning of data  
 library("ggplot2")
 library("readxl")
+library("dplyr") 
 
 #### Load data ####
 XTTpath <- file.choose()
@@ -73,12 +74,11 @@ names(XTTraw)[grep("data", names(XTTraw), ignore.case=T)] <- "Data"
 names(XTTraw)[grep("harvest", names(XTTraw), ignore.case=T)] <- "Harvest"
 
 #### Clean data #### 
-XTTclean1 <- subset(XTTraw, Data != 0) #exclude empty wells
-XTTclean2 <- subset(XTTclean1, !is.na(Data)) #exclude possible NA´s
-selrow <- XTTclean2$Row %in% skiprows
-XTTclean3 <- XTTclean2[!selrow,] #exclude rows
-selcol <- XTTclean3$Column %in% skipcolumns
-XTTclean <- XTTclean3[!selcol,] #exclude columns
+XTTclean <- XTTraw %>%
+  filter(Data != 0 &
+           !is.na(Data) &
+           !(Row %in% skiprows) &
+           !(Column %in% skipcolumns))
 
 #### Set types of columns correctly #### 
 XTTclean$Harvest <- as.factor(XTTclean$Harvest)

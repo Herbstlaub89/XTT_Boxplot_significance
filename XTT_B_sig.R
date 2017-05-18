@@ -20,7 +20,7 @@ skipcolumns <- c(1,6,7,12)
 
 # Main-, sub- and axis titel of plot
 maintitel <- "XTT assay"
-subtitel <- "irradiated 30 min (630 nm, 23 mW/cm)"
+subtitel <- "ADSC irradiated 30 min (630 nm, 23 mW/cm)"
 xaxis <- "Time since irradiation [h]"
 yaxis <- "Fold change (irradiated/control)"
 
@@ -35,7 +35,7 @@ balanceGroups = TRUE
 ### Outliers-test, set to 0 to disable
 # maximal outliers to remove in each direction and group
 # (highest AND lowest value are checked)
-maxoutliers <- 10 
+maxoutliers <- 2 
 
 # smaller values increase sensitivity of outlier detection
 # if highest value > (75% quantile + iqr * threshold) -> outlier
@@ -261,13 +261,15 @@ p <- p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = a
 
 #### Histogram as diagnosis plot ####
 if(showHist) {
-  windows(8,8)
   hist <- ggplot(XTTplot, 
          aes(x = FoldChange, color = Harvest, fill = Harvest)) +
     geom_histogram(alpha = 0.8, binwidth =  0.05) +
     facet_grid(Harvest~.) +
     theme_bw() +
     scale_x_continuous(breaks=seq(ymini,ymaxi,0.1))
+  gridExtra::grid.arrange(p, hist, ncol = 2)
+} else {
+  p
 }
 
 if(outlCount > 0) {

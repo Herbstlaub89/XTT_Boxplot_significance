@@ -160,8 +160,7 @@ if(balanceGroups) {
   for(i in seq_along(lvlslabel)) {
     includeRows <- append(includeRows,
                           sample(x = which(XTTout$Harvest == lvls[i]), 
-                                 size = gmin)
-                          )
+                                 size = gmin))
   }
   XTTplot <- XTTout[includeRows,]
 } else {
@@ -242,14 +241,21 @@ starlabel <- data.frame("label" = integer(), "x" = integer(), "y" = integer())
 for(i in seq_along(stars[,1])) {
   lines[[i]] <- data.frame(xli =  as.numeric(c(rep(stars$poscol[i],2),
                                                rep(stars$posrow[i],2))), 
-                           # i*step size, gap between lines, offset (horizontal length of line)
+                           # i*step size, 
+                           # gap between lines, 
+                           # offset (horizontal length of line)
                            yli = c(MaxFC - 2*i*0.025, 
                                    MaxFC - 2*i*0.025+0.025,  
                                    MaxFC - 2*i*0.025+0.025, 
                                    MaxFC - 2*i*0.025))
   
-  # loop over stars dataframe and generate coordinates for stars, x is between compared groups(mean), and y depends on MaxFC and i 
-  starlabel[i,] <- c(stars$value[i], mean(c(as.numeric(stars$poscol[i]), as.numeric(stars$posrow[i]))), (MaxFC - i*0.025-i*0.025+0.035))
+  # loop over stars dataframe and generate coordinates for stars, 
+  # x is between compared groups(mean), 
+  # and y depends on MaxFC and i 
+  starlabel[i,] <- c(stars$value[i], 
+                     mean(c(as.numeric(stars$poscol[i]), 
+                            as.numeric(stars$posrow[i]))), 
+                     (MaxFC - i*0.025-i*0.025+0.035))
 }
 
 ##### draw lines #### 
@@ -258,7 +264,10 @@ for(i in seq_along(lines)) {
 } 
 
 #### draw stars, show plot #### 
-p <- p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.numeric(y)))
+p <- p + geom_text(data = starlabel, 
+                   aes(label = label, 
+                       x = as.numeric(x), 
+                       y = as.numeric(y)))
 
 
 #### Jittered points ####
@@ -280,7 +289,9 @@ if(showHist) {
   p
 }
 
-XTTplot %>% group_by(Harvest) %>% summarise(FC = mean(FoldChange), sd = sd(FoldChange))
+XTTplot %>% 
+  group_by(Harvest) %>% 
+  summarise(FC = mean(FoldChange), sd = sd(FoldChange))
 
 if(outlCount > 0) {
   cat(paste(sep = "",outlCount, " outliers were found and removed.\n",

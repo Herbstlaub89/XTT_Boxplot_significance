@@ -47,6 +47,10 @@ threshold <- 1.5
 # useful to manualy detect outliers and afterwards set the maxoutliers variable accordingly
 showHist = TRUE
 
+### Show jittered points
+# shows individual data points in plot
+showJitter = FALSE
+
 ###################### End of setup section ####################################
 
 # Set Random seed (mostly affects the group balancing)
@@ -224,7 +228,6 @@ p <- ggplot(XTTplot, aes(Harvest, FoldChange)) +
   coord_cartesian(ylim = c(ymini, ymaxi)) +
   theme_bw() + theme(panel.grid = element_blank()) +
   ggtitle(maintitel, subtitel) + ylab(yaxis) + xlab(xaxis) +
-  #geom_jitter(width = 0.1, height = 0) + #uncomment to see individual datapoints
   #geom_text(data = nlabel.df, label = paste("n = ",lvlslabel)) + #number of observations/group
   #does not work if balanceGroups is TRUE because original number is shown
   scale_y_continuous(breaks=seq(ymini,ymaxi,0.1)) + 
@@ -258,6 +261,10 @@ for(i in seq_along(lines)) {
 p <- p + geom_text(data = starlabel, aes(label = label, x = as.numeric(x), y = as.numeric(y)))
 
 
+#### Jittered points ####
+if(showJitter) {
+ p <- p + geom_point(shape = 1, position = position_jitter(w = 0.1, h = 0))
+}
 
 #### Histogram as diagnosis plot ####
 if(showHist) {
@@ -266,7 +273,8 @@ if(showHist) {
     geom_histogram(alpha = 0.8, binwidth =  0.05) +
     facet_grid(Harvest~.) +
     theme_bw() +
-    scale_x_continuous(breaks=seq(ymini,ymaxi,0.1))
+    scale_x_continuous(breaks=seq(ymini,ymaxi,0.05)) +
+    geom_vline(xintercept = 1)
   gridExtra::grid.arrange(p, hist, ncol = 2)
 } else {
   p

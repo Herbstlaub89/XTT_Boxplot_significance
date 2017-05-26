@@ -16,11 +16,11 @@ ymaxi = 1.5
 # Rows and columns not to use 
 # (eg. borders of plate or border between irradiated/control)
 skiprows <- c("A", "H") 
-skipcolumns <- c(1,6,7,12) 
+skipcolumns <- c(1,12) 
 
 # Main-, sub- and axis titel of plot
 maintitel <- "XTT assay of ADSC´s"
-subtitel <- "transfered medium from Fibroblasts\nirradiated 30 min (453 nm, 23 mW/cm)"
+subtitel <- "transfered medium \nirradiated 30 min (453 nm, 23 mW/cm)"
 xaxis <- "Time since medium transfer [h]"
 yaxis <- "Fold change (irradiated/control)"
 
@@ -35,13 +35,13 @@ balanceGroups = TRUE
 ### Outliers-test, set to 0 to disable
 # maximal outliers to remove in each direction and group
 # (highest AND lowest value are checked)
-maxoutliers <- 2 
+maxoutliers <- 2
 
 # smaller values increase sensitivity of outlier detection
 # if highest value > (75% quantile + iqr * threshold) -> outlier
 # if lowest value < (25% quantile - iqr * threshold) -> outlier
 # a threshold of 1.5 is a good starting point 
-threshold <- 1.5 
+threshold <- 1.5
 
 ### Show histogram as diagnosis plot?
 # useful to manualy detect outliers and afterwards set the maxoutliers variable accordingly
@@ -119,19 +119,9 @@ for(lvl in lvls) {
 XTTout <- XTTclean[!(XTTclean$id %in% idlist),]
 
 #### calculate averages for control groups ####
-# create df to store means
-avg <- data.frame(Avg = as.numeric(), 
-                  Harvest = as.numeric(),
-                  PlateID = as.numeric())
-
-# calculate averages for each combination of harvesting time and PlateID
-for(lvl in lvls) {
-  for(pID in unique(XTTout$PlateID[XTTout$Harvest == lvl]))
-    avg[nrow(avg)+1,] <- c(mean(XTTout$Data[XTTout$Harvest == lvl 
-                                              & XTTout$PlateID == pID]),
-                           lvl, 
-                           pID)
-}
+avg <- XTTout %>% 
+  group_by(Harvest, PlateID) %>% 
+  summarise(Avg = mean(Data))
 
 #### calculate FoldChanges ####
 suppressWarnings( # suppress warning because of uninitialised column: 'FoldChange' 
@@ -141,7 +131,6 @@ suppressWarnings( # suppress warning because of uninitialised column: 'FoldChang
         avg$PlateID == XTTout$PlateID[i]])
   }
 )
-
 
 #### generate labels for number of measurments #### 
 lvlslabel <- c() #reset vector

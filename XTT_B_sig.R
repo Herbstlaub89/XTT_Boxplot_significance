@@ -142,16 +142,13 @@ for(i in lvls) {
 }
 
 #### Balance group-sizes #####
-# get size of smallest group
 if(balanceGroups) {
-  includeRows <- c() # reset vecotor
-  gmin <- min(lvlslabel) # get minimal group size
-  for(i in seq_along(lvlslabel)) {
-    includeRows <- append(includeRows,
-                          sample(x = which(XTTout$Harvest == lvls[i]), 
-                                 size = gmin))
-  }
-  XTTplot <- XTTout[includeRows,]
+  # get size of smallest group
+  gmin <- min(lvlslabel) 
+  # random sample from each group
+  XTTplot <- XTTout %>% 
+    group_by(Harvest) %>%
+    sample_n(gmin)
 } else {
   XTTplot <- XTTout
 }
@@ -283,7 +280,7 @@ XTTplot %>%
   summarise(FC = mean(FoldChange), sd = sd(FoldChange), n = n())
 
 if(outlCount > 0) {
-  cat(paste(sep = "",outlCount, " outliers were found and removed.\n",
+  cat(paste(sep = "","\n", outlCount, " outliers were found and removed.\n",
                        "The following list contains observations considered outliers:\n\n"))
   data.frame(XTTclean[idlist,])
 }

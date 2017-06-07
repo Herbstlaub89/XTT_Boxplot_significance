@@ -11,12 +11,12 @@
 
 # Scaling of y-axis
 ymini = 0.5
-ymaxi = 1.5
+ymaxi = 1.7
 
 # Rows and columns not to use 
 # (eg. borders of plate or border between irradiated/control)
 skiprows <- c("A", "H") 
-skipcolumns <- c(1,12) 
+skipcolumns <- c(1,6,7,12) 
 
 # Main-, sub- and axis titel of plot
 maintitel <- "XTT assay of ADSC´s"
@@ -60,6 +60,36 @@ set.seed(42)
 library("ggplot2")
 library("readxl")
 library("dplyr") 
+
+#### Plot theme ####
+
+xtheme <- function() {
+  theme(
+    # legend
+    legend.position = "right", legend.title = element_text(family = "Calibri", colour = "#000000", size = 10),
+    legend.background = element_rect(fill = "#FFFFFF"),
+    legend.key = element_rect(fill = "#FFFFFF", colour = "#FFFFFF"),
+    legend.text = element_text(family = "Calibri", colour = "#000000", size = 10),
+    #legend.title=element_blank(),
+    # plot background
+    plot.title = element_text(colour = "black", face = "bold", size = 18, vjust = 1, family = "Calibri"),
+    plot.background = element_rect(fill = "white", colour = "white"),
+    panel.background = element_rect(fill = "white"),
+    # Axis 
+    axis.text = element_text(colour = "#000000", family = "Calibri", size=14),
+    axis.text.x = element_text(colour = "#000000", family = "Calibri", size=12),
+    axis.title = element_text(colour = "black", face = "bold", size = 12, family = "Calibri"),
+    axis.title.y = element_text(colour = "black", face = "bold", size = 12, family = "Calibri", vjust=1),
+    axis.ticks = element_line(colour = "black"),
+    # panel
+    panel.grid.major.x = element_line(colour = "#FFFFFF"),
+    panel.grid.minor.x = element_line(colour = "#FFFFFF"), #element_blank(),
+    panel.grid.major.y = element_line(colour = "#FFFFFF"), #element_blank(),
+    panel.grid.minor.y = element_line(colour = "#FFFFFF"), #element_blank(),
+    strip.text = element_text(family = "Calibri", colour = "white"),
+    strip.background = element_rect(fill = "#333333")
+  )
+}
 
 #### Load data ####
 XTTpath <- file.choose()
@@ -211,7 +241,7 @@ windows(8,8)
 p <- ggplot(XTTplot, aes(Harvest, FoldChange)) + 
   geom_boxplot(outlier.shape = 3, aes(group = Harvest)) +
   coord_cartesian(ylim = c(ymini, ymaxi)) +
-  theme_bw() + theme(panel.grid = element_blank()) +
+  xtheme()+
   ggtitle(maintitel, subtitel) + ylab(yaxis) + xlab(xaxis) +
   #geom_text(data = nlabel.df, label = paste("n = ",lvlslabel)) + #number of observations/group
   #does not work if balanceGroups is TRUE because original number is shown
@@ -264,11 +294,11 @@ if(showJitter) {
 #### Histogram as diagnosis plot ####
 if(showHist) {
   hist <- ggplot(XTTplot, 
-         aes(x = FoldChange, color = Harvest, fill = Harvest)) +
-    geom_histogram(alpha = 0.8, binwidth =  0.05) +
+         aes(x = FoldChange)) +
+    geom_histogram(alpha = 0.8, binwidth =  0.05, color = "black") +
     facet_grid(Harvest~.) +
-    theme_bw() +
-    scale_x_continuous(breaks=seq(ymini,ymaxi,0.05)) +
+    xtheme() +
+    scale_x_continuous(breaks=seq(ymini,ymaxi,0.1)) +
     geom_vline(xintercept = 1)
   gridExtra::grid.arrange(p, hist, ncol = 2)
 } else {

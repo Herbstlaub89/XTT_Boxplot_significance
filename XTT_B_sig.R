@@ -66,7 +66,7 @@ library("dplyr")
 xtheme <- function() {
   theme(
     # legend
-    legend.position = "right", legend.title = element_text(family = "Calibri", colour = "#000000", size = 10),
+    legend.position = "right", legend.title = element_text(face = "bold", family = "Calibri", colour = "#000000", size = 10),
     legend.background = element_rect(fill = "#FFFFFF"),
     legend.key = element_rect(fill = "#FFFFFF", colour = "#FFFFFF"),
     legend.text = element_text(family = "Calibri", colour = "#000000", size = 10),

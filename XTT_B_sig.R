@@ -10,8 +10,8 @@
 ###################### Change values here to fit your desire ###################
 
 # Scaling of y-axis
-ymini = 0.5
-ymaxi = 1.7
+ymini = 0.6
+ymaxi = 1.4
 
 # Rows and columns not to use 
 # (eg. borders of plate or border between irradiated/control)
@@ -35,7 +35,7 @@ balanceGroups = TRUE
 ### Outliers-test, set to 0 to disable
 # maximal outliers to remove in each direction and group
 # (highest AND lowest value are checked)
-maxoutliers <- 2
+maxoutliers <- 0
 
 # smaller values increase sensitivity of outlier detection
 # if highest value > (75% quantile + iqr * threshold) -> outlier
@@ -45,7 +45,7 @@ threshold <- 1.5
 
 ### Show histogram as diagnosis plot?
 # useful to manualy detect outliers and afterwards set the maxoutliers variable accordingly
-showHist = TRUE
+showHist = FALSE
 
 ### Show jittered points
 # shows individual data points in plot
@@ -57,36 +57,36 @@ showJitter = FALSE
 set.seed(42)
 
 # Load ggplot2 for plotting, readxl for excel import and dplyr for cleaning of data  
-library("ggplot2")
-library("readxl")
-library("dplyr") 
+library(ggplot2)
+library(readxl)
+library(dplyr) 
 
 #### Plot theme ####
 
 xtheme <- function() {
   theme(
     # legend
-    legend.position = "right", legend.title = element_text(face = "bold", family = "Calibri", colour = "#000000", size = 10),
+    legend.position = "right", legend.title = element_text(face = "bold", colour = "#000000", size = 10),
     legend.background = element_rect(fill = "#FFFFFF"),
     legend.key = element_rect(fill = "#FFFFFF", colour = "#FFFFFF"),
-    legend.text = element_text(family = "Calibri", colour = "#000000", size = 10),
+    legend.text = element_text(colour = "#000000", size = 10),
     #legend.title=element_blank(),
     # plot background
-    plot.title = element_text(colour = "black", face = "bold", size = 18, vjust = 1, family = "Calibri"),
+    plot.title = element_text(colour = "black", face = "bold", size = 18, vjust = 1),
     plot.background = element_rect(fill = "white", colour = "white"),
     panel.background = element_rect(fill = "white"),
     # Axis 
-    axis.text = element_text(colour = "#000000", family = "Calibri", size=14),
-    axis.text.x = element_text(colour = "#000000", family = "Calibri", size=12),
-    axis.title = element_text(colour = "black", face = "bold", size = 12, family = "Calibri"),
-    axis.title.y = element_text(colour = "black", face = "bold", size = 12, family = "Calibri", vjust=1),
+    axis.text = element_text(colour = "#000000", size=14),
+    axis.text.x = element_text(colour = "#000000", size=12),
+    axis.title = element_text(colour = "black", face = "bold", size = 12),
+    axis.title.y = element_text(colour = "black", face = "bold", size = 12, vjust=1),
     axis.ticks = element_line(colour = "black"),
     # panel
     panel.grid.major.x = element_line(colour = "#FFFFFF"),
     panel.grid.minor.x = element_line(colour = "#FFFFFF"), #element_blank(),
     panel.grid.major.y = element_line(colour = "#FFFFFF"), #element_blank(),
     panel.grid.minor.y = element_line(colour = "#FFFFFF"), #element_blank(),
-    strip.text = element_text(family = "Calibri", colour = "white"),
+    strip.text = element_text(colour = "white"),
     strip.background = element_rect(fill = "#333333")
   )
 }
@@ -307,10 +307,15 @@ if(showHist) {
 
 XTTplot %>% 
   group_by(Harvest) %>% 
-  summarise(FC = mean(FoldChange), sd = sd(FoldChange), n = n())
+  summarise(meanFC = mean(FoldChange), 
+            sdFC = sd(FoldChange),
+            meanRaw = mean(Data),
+            sdRaw = sd(Data),
+            n = n())
 
 if(outlCount > 0) {
   cat(paste(sep = "","\n", outlCount, " outliers were found and removed.\n",
                        "The following list contains observations considered outliers:\n\n"))
   data.frame(XTTclean[idlist,])
 }
+ggsave(paste(file_path_sans_ext(XTTpath),".png", sep =""),plot = p,height=12,width=12,dpi=600,units="cm")

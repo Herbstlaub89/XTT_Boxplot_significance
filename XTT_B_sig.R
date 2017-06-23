@@ -10,8 +10,8 @@
 ###################### Change values here to fit your desire ###################
 
 # Scaling of y-axis
-ymini = 0.6
-ymaxi = 1.4
+ymini = 0.5
+ymaxi = 1.5
 
 # Rows and columns not to use 
 # (eg. borders of plate or border between irradiated/control)
@@ -35,17 +35,17 @@ balanceGroups = TRUE
 ### Outliers-test, set to 0 to disable
 # maximal outliers to remove in each direction and group
 # (highest AND lowest value are checked)
-maxoutliers <- 0
+maxoutliers <- 1
 
 # smaller values increase sensitivity of outlier detection
 # if highest value > (75% quantile + iqr * threshold) -> outlier
 # if lowest value < (25% quantile - iqr * threshold) -> outlier
 # a threshold of 1.5 is a good starting point 
-threshold <- 1.5
+threshold <- 1
 
 ### Show histogram as diagnosis plot?
 # useful to manualy detect outliers and afterwards set the maxoutliers variable accordingly
-showHist = FALSE
+showHist = TRUE
 
 ### Show jittered points
 # shows individual data points in plot
@@ -55,6 +55,8 @@ showJitter = FALSE
 
 # Set Random seed (mostly affects the group balancing)
 set.seed(42)
+
+CTRLcols = c(7,8,9,10,11,12)
 
 # Load ggplot2 for plotting, readxl for excel import and dplyr for cleaning of data  
 library(ggplot2)
@@ -104,8 +106,14 @@ for(i in grep("lab", names(XTTraw), ignore.case=T)) {
   }
 }
 
+XTTraw <- XTTraw %>%
+  mutate(Harvest = ifelse(Column %in% CTRLcols,
+                          yes = 0,
+                          no = `Harvesting time (h)`)
+  )
+
 names(XTTraw)[grep("data", names(XTTraw), ignore.case=T)] <- "Data"
-names(XTTraw)[grep("harvest", names(XTTraw), ignore.case=T)] <- "Harvest"
+
 
 #### Clean data #### 
 XTTclean <- XTTraw %>%
@@ -126,7 +134,7 @@ XTTclean$id <- c(1:nrow(XTTclean))
 lvls <- levels(XTTclean$Harvest)
 
 #### outliers test for each level ####
-reflist <- XTTclean[,c("id", "Data", "Harvest")] # list only needed data for outlier test
+reflist <- XTTclean[,c("id", "Data", "Harvest")] # list containing only needed data for outlier test
 outlCount <- 0
 idlist <- c()
 for(lvl in lvls) {
@@ -301,6 +309,7 @@ if(showHist) {
     scale_x_continuous(breaks=seq(ymini,ymaxi,0.1)) +
     geom_vline(xintercept = 1)
   gridExtra::grid.arrange(p, hist, ncol = 2)
+  g <- gridExtra::arrangeGrob(p, hist, ncol = 2)
 } else {
   p
 }
@@ -318,4 +327,4 @@ if(outlCount > 0) {
                        "The following list contains observations considered outliers:\n\n"))
   data.frame(XTTclean[idlist,])
 }
-ggsave(paste(file_path_sans_ext(XTTpath),".png", sep =""),plot = p,height=12,width=12,dpi=600,units="cm")
+ggsave(paste(tools::file_path_sans_ext(XTTpath),".png", sep =""),plot = p,height=12,width=12,dpi=600,units="cm")
